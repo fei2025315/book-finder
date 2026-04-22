@@ -25,7 +25,7 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100dvh;
-    padding: 3rem 1.5rem 4rem;
+    padding: 3rem 2rem 4rem;
     max-width: 400px;
     margin: 0 auto;
   }
@@ -266,12 +266,6 @@ function search() {
     sec.appendChild(group);
     container.appendChild(sec);
   });
-
-  const btn = document.createElement('button');
-  btn.className = 'open-all';
-  btn.textContent = '全部打开';
-  btn.onclick = () => { allUrls.forEach(u => window.open(u, '_blank')); };
-  container.appendChild(btn);
 
   container.classList.add('show');
 }
