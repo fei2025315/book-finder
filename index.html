@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>找书</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #f5f3ef;
+    --text: #2a2825;
+    --muted: #9e9891;
+    --light: #c5c0b8;
+    --border: #e4e0da;
+    --accent: #b8503a;
+    --card-bg: #fdfcf9;
+    --shadow: 0 1px 2px rgba(0,0,0,0.03), 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  body {
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    padding: 3rem 1.5rem 4rem;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 2.25rem;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    font-weight: 300;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 300;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.25s ease;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--light);
+    font-weight: 300;
+  }
+
+  .search-btn {
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 0.6rem 1.1rem;
+    border: none;
+    border-radius: 6px;
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .search-btn:active { opacity: 0.6; }
+
+  /* Results */
+
+  .results {
+    display: none;
+    flex-direction: column;
+    margin-top: 2rem;
+  }
+
+  .results.show { display: flex; }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--light);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .section + .section {
+    margin-top: 1.5rem;
+  }
+
+  .link-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .link-group a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: var(--card-bg);
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.9rem;
+    transition: background 0.15s;
+  }
+
+  .link-group a:active {
+    background: #f7f5f1;
+  }
+
+  .platform-name {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .verb {
+    font-size: 0.72rem;
+    font-weight: 300;
+    color: var(--muted);
+    margin-left: 0.6rem;
+  }
+
+  .arrow {
+    color: var(--light);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+
+  .link-group a:active .arrow {
+    color: var(--accent);
+  }
+
+  .link-group a + a {
+    border-top: 1px solid var(--border);
+  }
+
+  .open-all {
+    margin-top: 2rem;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 0.65rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    width: 100%;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .open-all:active {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>找书</h1>
+  <p class="subtitle">输入书名或作者，一键查所有平台</p>
+</header>
+
+<div class="input-row">
+  <input type="text" id="bookInput" placeholder="书名 / 作者" autofocus>
+  <button class="search-btn" onclick="search()">搜</button>
+</div>
+
+<div class="results" id="results"></div>
+
+<script>
+const sections = [
+  {
+    label: '看评价',
+    platforms: [
+      { name: '豆瓣', verb: '评分·书评', url: q => `https://search.douban.com/book/subject_search?search_text=${q}` },
+      { name: 'Goodreads', verb: '书评', url: q => `https://www.goodreads.com/search?q=${q}` },
+    ]
+  },
+  {
+    label: '找来看',
+    platforms: [
+      { name: '微信读书', verb: '读', url: q => `https://weread.qq.com/web/search/books?keyword=${q}` },
+      { name: '多抓鱼', verb: '买', url: q => `https://www.duozhuayu.com/search/book/${q}` },
+      { name: '上海图书馆', verb: '借', url: q => `https://vufind.library.sh.cn/Search/Results?lookfor=${q}&type=AllFields` },
+      { name: 'Z-Library', verb: '下载', url: q => `https://www.google.com/search?q=z-library+${q}` },
+    ]
+  }
+];
+
+function search() {
+  const input = document.getElementById('bookInput');
+  const q = input.value.trim();
+  if (!q) return;
+
+  const encoded = encodeURIComponent(q);
+  const container = document.getElementById('results');
+  container.innerHTML = '';
+
+  const allUrls = [];
+
+  sections.forEach(section => {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+
+    const label = document.createElement('div');
+    label.className = 'section-label';
+    label.textContent = section.label;
+    sec.appendChild(label);
+
+    const group = document.createElement('div');
+    group.className = 'link-group';
+
+    section.platforms.forEach(p => {
+      const href = p.url(encoded);
+      allUrls.push(href);
+      const a = document.createElement('a');
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.innerHTML = `
+        <div>
+          <span class="platform-name">${p.name}</span><span class="verb">${p.verb}</span>
+        </div>
+        <span class="arrow">›</span>
+      `;
+      group.appendChild(a);
+    });
+
+    sec.appendChild(group);
+    container.appendChild(sec);
+  });
+
+  const btn = document.createElement('button');
+  btn.className = 'open-all';
+  btn.textContent = '全部打开';
+  btn.onclick = () => { allUrls.forEach(u => window.open(u, '_blank')); };
+  container.appendChild(btn);
+
+  container.classList.add('show');
+}
+
+document.getElementById('bookInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') search();
+});
+</script>
+
+</body>
+</html>
